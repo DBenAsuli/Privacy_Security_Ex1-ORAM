@@ -5,6 +5,7 @@
 import random
 from server import *
 
+
 class Client():
     def __init__(self, num_of_blocks, server):
         self.N = num_of_blocks
@@ -34,7 +35,7 @@ class Client():
 
     def get_path_to_leaf(self, leaf):
         path = []
-        idx = leaf + self.server.num_buckets // 2
+        idx = leaf + self.server.num_of_buckets // 2
         while idx >= 0:
             path.append(idx)
             if idx == 0:
@@ -84,22 +85,28 @@ class Client():
         # Also evict the blocks from the stash
         updated_path_data = []
         for bucket_id in path:
-            bucket = [block for block in self.stash if self.get_path_to_leaf(self.position_map[block['id']]).index(bucket_id) >= 0]
+            bucket = [block for block in self.stash if
+                      bucket_id in self.get_path_to_leaf(self.position_map[block['id']])]
             updated_path_data.append(bucket[:self.server.bucket_size])
             self.stash = [block for block in self.stash if block not in updated_path_data[-1]]
 
-        self.server.write_path(path, updated_path_data[::-1])
+        self.server.write_path(path, updated_path_data)
 
     # Access to server to retrieve data.
     # We pass the desired block_id and the new_data we want to update to it, if so.
     # The Function returns the read data while also updating a new path to the tree inside
     # the server. We can also delete data from a block using the "delete" argument.
     def access(self, block_id, new_data=None, delete=False):
+        # Handling non-existing blocks
+        if block_id not in self.position_map:
+            return None
+
         leaf = self.position_map[block_id]
         path = self.get_path_to_leaf(leaf)
+
         self.read_path_to_stash(path)
         data, block_to_remove = self.find_and_update_block_in_stash(block_id, new_data, delete)
-        self.write_new_path_to_server(block_id, path, block_to_remove, delete, block_to_remove)
+        self.write_new_path_to_server(block_id, path, delete, block_to_remove)
 
         return data
 
@@ -115,4 +122,3 @@ class Client():
     # The client deletes data associated with an ID from server by calling:
     def delete_data(self, server, id, data):
         self.access(id, delete=True)
-

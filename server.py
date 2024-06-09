@@ -9,6 +9,7 @@ from collections import OrderedDict
 DATA_LEN = 4
 BUCKET_SIZE = 4
 
+
 class Server():
     N = 0
 
@@ -35,8 +36,9 @@ class Server():
     def retrieve_data(self, id, data):
         pass
 
-    def delete_data (self, id, data):
+    def delete_data(self, id, data):
         pass
+
 
 class DataBlock():
     data_len = DATA_LEN
@@ -56,4 +58,3 @@ class DataBlock():
             return self.data
 
         return 0
-

@@ -6,7 +6,7 @@ from main import *
 
 if __name__ == '__main__':
     N = input("Please enter the preferred value of N: ")
-    N = 8 # FIXME REMOVE
+    N = 8  # FIXME REMOVE
     client = Client()
     server = Server(num_of_blocks=N)
 
