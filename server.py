@@ -1,18 +1,33 @@
 # Advanced Topics in Online Privacy and Cybersecurity     Exercise 1
 # Dvir Ben Asuli                                          318208816
 # The Hebrew University of Jerusalem                      June 2024
+import math
 
 import Crypto.Cipher
 from collections import OrderedDict
 
 DATA_LEN = 4
+BUCKET_SIZE = 4
 
 class Server():
     N = 0
-    datablocks = dict()
 
-    def __init__(self, num_of_blocks):
+    def __init__(self, num_of_blocks, bucket_size=BUCKET_SIZE):
         self.N = num_of_blocks
+        self.bucket_size = bucket_size
+        self.tree_height = math.ceil(math.log2(num_of_blocks))
+        self.num_of_buckets = 2 ** (self.tree_height + 1) - 1
+        self.buckets = [[] for _ in range(self.num_of_buckets)]
+
+    def read_path(self, path):
+        data = []
+        for bucket_id in path:
+            data.extend(self.buckets[bucket_id])
+        return data
+
+    def write_path(self, path, data):
+        for bucket_id, blocks in zip(path, data):
+            self.buckets[bucket_id] = blocks
 
     def store_data(self, id, data):
         pass
@@ -22,13 +37,6 @@ class Server():
 
     def delete_data (self, id, data):
         pass
-
-    def new_user(self, id):
-        self.datablocks[id] = []
-
-        for i in range(0, self.N):
-            new_datablock = DataBlock()
-            self.datablocks[id].append(new_datablock)
 
 class DataBlock():
     data_len = DATA_LEN
