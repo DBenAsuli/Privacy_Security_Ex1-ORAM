@@ -19,13 +19,13 @@ class Client():
         for i in range(self.N):
             leaf = self.position_map[i]
             path = self.get_path_to_leaf(leaf)
-            encrypted_data = self.encrypt(f"NULL_data_{i}")
+            encrypted_data = self.encrypt(f"NULL")
 
             # Try to place the block in the leaf node first
             placed = False
             for bucket_id in reversed(path):
                 if len(self.server.storage[bucket_id]) < self.server.bucket_size:
-                    self.server.storage[bucket_id].append({'id': i, 'data': encrypted_data})
+                    self.server.storage[bucket_id].append({'id': i, 'data': encrypted_data, 'valid': 0})
                     placed = True
                     break
 
@@ -59,22 +59,18 @@ class Client():
             if block['id'] == block_id:
                 data = self.decrypt(block['data'])
                 if delete:
-                    block_to_remove = block
+                    block['data'] = self.encrypt('NULL')
+                    block['valid'] = 0
                 elif new_data is not None:
                     block['data'] = self.encrypt(new_data)
+                    block['valid'] = 1
                 break
 
-        return data, block_to_remove
+        return data
 
     # After re-assigning blocks to the path, write the new path
     # back to the server
-    def write_new_path_to_server(self, block_id, path, delete, block_to_remove):
-        # If we want to remove a block from the server, we shall remove
-        # it from the stash and then when we write back the blocks it will
-        # not return there
-        if block_to_remove:
-            self.stash.remove(block_to_remove)
-
+    def write_new_path_to_server(self, block_id, path, delete):
         # Randomize new position map encoding
         if not delete:
             # Update the position map
@@ -105,8 +101,8 @@ class Client():
         path = self.get_path_to_leaf(leaf)
 
         self.read_path_to_stash(path)
-        data, block_to_remove = self.find_and_update_block_in_stash(block_id, new_data, delete)
-        self.write_new_path_to_server(block_id, path, delete, block_to_remove)
+        data = self.find_and_update_block_in_stash(block_id, new_data, delete)
+        self.write_new_path_to_server(block_id, path, delete)
 
         return data
 
