@@ -3,9 +3,11 @@
 # The Hebrew University of Jerusalem                      June 2024
 
 import os
+import hmac
 import math
 import base64
 import Crypto
+import hashlib
 import Crypto.Cipher
 from Crypto.Cipher import AES
 from Crypto.Random import get_random_bytes
@@ -28,7 +30,6 @@ class Server():
 
         # The Storage is implemented as a list but functionally acts like a binary tree
         self.storage = [[] for _ in range(self.num_of_buckets)]
-
 
     def read_path(self, path):
         data = []

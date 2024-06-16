@@ -20,18 +20,19 @@ class Client():
             leaf = self.position_map[i]
             path = self.get_path_to_leaf(leaf)
             encrypted_data = self.encrypt(f"NULL")
+            mac = self.generate_mac(encrypted_data)
 
             # Try to place the block in the leaf node first
             placed = False
             for bucket_id in reversed(path):
                 if len(self.server.storage[bucket_id]) < self.server.bucket_size:
-                    self.server.storage[bucket_id].append({'id': i, 'data': encrypted_data, 'valid': 0})
+                    self.server.storage[bucket_id].append({'id': i, 'data': encrypted_data, 'valid': 0, 'mac': mac})
                     placed = True
                     break
 
             # If not placed, it will go to the stash (though this shouldn't happen during initialization)
             if not placed:
-                self.stash.append({'id': i, 'data': encrypted_data})
+                self.stash.append({'id': i, 'data': encrypted_data, 'valid' : 0, 'mac': mac})
 
     def get_path_to_leaf(self, leaf):
         path = []
@@ -57,13 +58,19 @@ class Client():
         block_to_remove = None
         for block in self.stash:
             if block['id'] == block_id:
+                if not self.verify_mac(block['data'], block['mac']):
+                    print(f"MAC verification failed for block {block_id}.")
+                    return None
+
                 data = self.decrypt(block['data'])
                 if delete:
                     block['data'] = self.encrypt('NULL')
                     block['valid'] = 0
                 elif new_data is not None:
-                    block['data'] = self.encrypt(new_data)
+                    encrypted_data = self.encrypt(new_data)
                     block['valid'] = 1
+                    block['data'] = encrypted_data
+                    block['mac'] = self.generate_mac(encrypted_data)
                 break
 
         return data
@@ -85,6 +92,11 @@ class Client():
                       bucket_id in self.get_path_to_leaf(self.position_map[block['id']])]
             updated_path_data.append(bucket[:self.server.bucket_size])
             self.stash = [block for block in self.stash if block not in updated_path_data[-1]]
+
+        # Write updated data with MAC
+        for block in updated_path_data:
+            for bucket in block:
+                bucket['mac'] = self.generate_mac(bucket['data'])
 
         self.server.write_path(path, updated_path_data)
 
@@ -135,3 +147,11 @@ class Client():
         ct = enc_data[AES.block_size:]
         cipher = AES.new(self.key, AES.MODE_CBC, iv)
         return unpad(cipher.decrypt(ct), AES.block_size).decode()
+
+    def generate_mac(self, data):
+        h = hmac.new(self.key, data, hashlib.sha256)
+        return h.digest()
+
+    def verify_mac(self, data, mac):
+        h = hmac.new(self.key, data, hashlib.sha256)
+        return hmac.compare_digest(h.digest(), mac)

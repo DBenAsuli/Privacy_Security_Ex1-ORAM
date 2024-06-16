@@ -9,6 +9,7 @@ from client import *
 from queue import Queue
 import matplotlib.pyplot as plt
 
+
 def benchmark_throughput(num_blocks_list, num_requests):
     throughput_results = []
 
@@ -31,6 +32,7 @@ def benchmark_throughput(num_blocks_list, num_requests):
     #    print(f"Throughput for N={num_blocks}: {throughput:.2f} requests/sec")
 
     return throughput_results
+
 
 def benchmark_latency(num_blocks, num_requests, max_threads):
     server = Server(num_of_blocks=num_blocks)
@@ -72,6 +74,7 @@ def benchmark_latency(num_blocks, num_requests, max_threads):
 
     return latency_results
 
+
 def plot_throughput(throughput_results):
     num_blocks = [result[0] for result in throughput_results[0]]
     throughputs = throughput_results[1]
@@ -83,6 +86,7 @@ def plot_throughput(throughput_results):
     plt.ylabel('Throughput (requests/sec)')
     plt.grid(True)
     plt.show()
+
 
 def plot_latency(latency_results):
     num_threads = [result[0] for result in latency_results[0]]
@@ -98,7 +102,6 @@ def plot_latency(latency_results):
 
 
 if __name__ == '__main__':
-
     num_blocks_list = [2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2056]
     num_requests = 1000
     throughput_results = []
@@ -132,4 +135,4 @@ if __name__ == '__main__':
 
     plot_latency([latency_results[0], latency_results_average])
 
-
+    print("\nDone!")
