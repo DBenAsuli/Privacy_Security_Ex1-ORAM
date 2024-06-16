@@ -10,6 +10,7 @@ class Client():
     def __init__(self, num_of_blocks, server):
         self.N = num_of_blocks
         self.server = server
+        self.get_shared_key(self.server)
         self.stash = []
         self.position_map = {i: random.randint(0, 2 ** server.tree_height - 1) for i in range(num_of_blocks)}
         self.initialize_tree()
@@ -18,20 +19,19 @@ class Client():
         for i in range(self.N):
             leaf = self.position_map[i]
             path = self.get_path_to_leaf(leaf)
+            encrypted_data = self.encrypt(f"NULL_data_{i}")
 
-            # Try to place the block in the leaf node
-            # If it's not successful it tries to place it in one of the inner nodes
+            # Try to place the block in the leaf node first
             placed = False
             for bucket_id in reversed(path):
-                if len(self.server.buckets[bucket_id]) < self.server.bucket_size:
-                    self.server.buckets[bucket_id].append({'id': i, 'data': f"data_{i}"})
+                if len(self.server.storage[bucket_id]) < self.server.bucket_size:
+                    self.server.storage[bucket_id].append({'id': i, 'data': encrypted_data})
                     placed = True
                     break
 
-            # For completeness, If not placed, it will go to the stash (
-            # This should never happen though
+            # If not placed, it will go to the stash (though this shouldn't happen during initialization)
             if not placed:
-                self.stash.append({'id': i, 'data': f"data_{i}"})
+                self.stash.append({'id': i, 'data': encrypted_data})
 
     def get_path_to_leaf(self, leaf):
         path = []
@@ -57,11 +57,11 @@ class Client():
         block_to_remove = None
         for block in self.stash:
             if block['id'] == block_id:
-                data = block['data']
+                data = self.decrypt(block['data'])
                 if delete:
                     block_to_remove = block
                 elif new_data is not None:
-                    block['data'] = new_data
+                    block['data'] = self.encrypt(new_data)
                 break
 
         return data, block_to_remove
@@ -122,3 +122,20 @@ class Client():
     # The client deletes data associated with an ID from server by calling:
     def delete_data(self, server, id, data):
         self.access(id, delete=True)
+
+    # Get the shared key from Server
+    def get_shared_key(self, server):
+        self.key = self.server.share_key()
+
+    # Encryption of a block
+    def encrypt(self, data):
+        cipher = AES.new(self.key, AES.MODE_CBC)
+        ct_bytes = cipher.encrypt(pad(data.encode(), AES.block_size))
+        return cipher.iv + ct_bytes
+
+    # Decryption of a block
+    def decrypt(self, enc_data):
+        iv = enc_data[:AES.block_size]
+        ct = enc_data[AES.block_size:]
+        cipher = AES.new(self.key, AES.MODE_CBC, iv)
+        return unpad(cipher.decrypt(ct), AES.block_size).decode()
