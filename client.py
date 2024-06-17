@@ -15,6 +15,62 @@ class Client():
         self.position_map = {i: random.randint(0, 2 ** server.tree_height - 1) for i in range(num_of_blocks)}
         self.initialize_tree()
 
+    # The client stores data associated with an ID on the server by calling:
+    def store_data(self, server, id, data):
+        self.access(id, new_data=data)
+
+    # Given a name, the client retrieves associated data by calling:
+    def retrieve_data(self, server, id, data):
+        # the client returns None if the data does not exist.
+        return self.access(id)
+
+    # The client deletes data associated with an ID from server by calling:
+    def delete_data(self, server, id, data):
+        self.access(id, delete=True)
+
+    # Access to server to retrieve data.
+    # We pass the desired block_id and the new_data we want to update to it, if so.
+    # The Function returns the read data while also updating a new path to the tree inside
+    # the server. We can also delete data from a block using the "delete" argument.
+    def access(self, block_id, new_data=None, delete=False):
+        # Handling non-existing blocks
+        if block_id not in self.position_map:
+            return None
+
+        leaf = self.position_map[block_id]
+        path = self.get_path_to_leaf(leaf)
+
+        self.read_path_to_stash(path)
+        data = self.find_and_update_block_in_stash(block_id, new_data, delete)
+        self.write_new_path_to_server(block_id, path, delete)
+
+        return data
+
+    # Get the shared key from Server
+    def get_shared_key(self, server):
+        self.key = self.server.share_key()
+
+    # Encryption of a block
+    def encrypt(self, data):
+        cipher = AES.new(self.key, AES.MODE_CBC)
+        ct_bytes = cipher.encrypt(pad(data.encode(), AES.block_size))
+        return cipher.iv + ct_bytes
+
+    # Decryption of a block
+    def decrypt(self, enc_data):
+        iv = enc_data[:AES.block_size]
+        ct = enc_data[AES.block_size:]
+        cipher = AES.new(self.key, AES.MODE_CBC, iv)
+        return unpad(cipher.decrypt(ct), AES.block_size).decode()
+
+    def generate_mac(self, data):
+        h = hmac.new(self.key, data, hashlib.sha256)
+        return h.digest()
+
+    def verify_mac(self, data, mac):
+        h = hmac.new(self.key, data, hashlib.sha256)
+        return hmac.compare_digest(h.digest(), mac)
+
     def initialize_tree(self):
         for i in range(self.N):
             leaf = self.position_map[i]
@@ -32,7 +88,7 @@ class Client():
 
             # If not placed, it will go to the stash (though this shouldn't happen during initialization)
             if not placed:
-                self.stash.append({'id': i, 'data': encrypted_data, 'valid' : 0, 'mac': mac})
+                self.stash.append({'id': i, 'data': encrypted_data, 'valid': 0, 'mac': mac})
 
     def get_path_to_leaf(self, leaf):
         path = []
@@ -99,59 +155,3 @@ class Client():
                 bucket['mac'] = self.generate_mac(bucket['data'])
 
         self.server.write_path(path, updated_path_data)
-
-    # Access to server to retrieve data.
-    # We pass the desired block_id and the new_data we want to update to it, if so.
-    # The Function returns the read data while also updating a new path to the tree inside
-    # the server. We can also delete data from a block using the "delete" argument.
-    def access(self, block_id, new_data=None, delete=False):
-        # Handling non-existing blocks
-        if block_id not in self.position_map:
-            return None
-
-        leaf = self.position_map[block_id]
-        path = self.get_path_to_leaf(leaf)
-
-        self.read_path_to_stash(path)
-        data = self.find_and_update_block_in_stash(block_id, new_data, delete)
-        self.write_new_path_to_server(block_id, path, delete)
-
-        return data
-
-    # The client stores data associated with an ID on the server by calling:
-    def store_data(self, server, id, data):
-        self.access(id, new_data=data)
-
-    # Given a name, the client retrieves associated data by calling:
-    def retrieve_data(self, server, id, data):
-        # the client returns None if the data does not exist.
-        return self.access(id)
-
-    # The client deletes data associated with an ID from server by calling:
-    def delete_data(self, server, id, data):
-        self.access(id, delete=True)
-
-    # Get the shared key from Server
-    def get_shared_key(self, server):
-        self.key = self.server.share_key()
-
-    # Encryption of a block
-    def encrypt(self, data):
-        cipher = AES.new(self.key, AES.MODE_CBC)
-        ct_bytes = cipher.encrypt(pad(data.encode(), AES.block_size))
-        return cipher.iv + ct_bytes
-
-    # Decryption of a block
-    def decrypt(self, enc_data):
-        iv = enc_data[:AES.block_size]
-        ct = enc_data[AES.block_size:]
-        cipher = AES.new(self.key, AES.MODE_CBC, iv)
-        return unpad(cipher.decrypt(ct), AES.block_size).decode()
-
-    def generate_mac(self, data):
-        h = hmac.new(self.key, data, hashlib.sha256)
-        return h.digest()
-
-    def verify_mac(self, data, mac):
-        h = hmac.new(self.key, data, hashlib.sha256)
-        return hmac.compare_digest(h.digest(), mac)
