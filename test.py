@@ -3,7 +3,6 @@ from main import *
 if __name__ == '__main__':
     error = 0
     num_of_tests = random.randint(10, 100)
-
     print("Starting tests... \n")
 
     for i in range(num_of_tests):

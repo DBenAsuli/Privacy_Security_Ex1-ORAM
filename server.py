@@ -15,7 +15,7 @@ from Crypto.Util.Padding import pad, unpad
 from collections import OrderedDict
 
 DATA_LEN = 4
-BUCKET_SIZE = 4
+BUCKET_SIZE = 16
 
 
 class Server():
@@ -31,30 +31,26 @@ class Server():
         # The Storage is implemented as a list but functionally acts like a binary tree
         self.storage = [[] for _ in range(self.num_of_buckets)]
 
+    # Request from the client to read a path to a leaf from Storage field
     def read_path(self, path):
         data = []
         for bucket_id in path:
             data.extend(self.storage[bucket_id])
         return data
 
+    # Request from the client to update a path to a leaf from Storage field
     def write_path(self, path, data):
         for bucket_id, blocks in zip(path, data):
             self.storage[bucket_id] = blocks
 
+    # Request from the client to get the size of a bucket inside the Storage
+    def get_bucket_size(self, bucket_id):
+        return len(self.storage[bucket_id])
+
+    # Request from the client to append an item to a bucket inside the Storage
+    def add_to_bucket(self, bucket_id, entry):
+        self.storage[bucket_id].append(entry)
+
+    # Request from the client to share a key for encryption
     def share_key(self):
         return self.key
-
-    def encrypt_block(self, plaintext):
-        cipher = AES.new(self.key, AES.MODE_GCM)
-        nonce = cipher.nonce
-        ciphertext, tag = cipher.encrypt_and_digest(plaintext)
-        return base64.b64encode(nonce + tag + ciphertext).decode()
-
-    def decrypt_block(self, encrypted_block):
-        encrypted_data = base64.b64decode(encrypted_block)
-        nonce = encrypted_data[:16]
-        tag = encrypted_data[16:32]
-        ciphertext = encrypted_data[32:]
-        cipher = AES.new(self.key, AES.MODE_GCM, nonce=nonce)
-        plaintext = cipher.decrypt_and_verify(ciphertext, tag)
-        return plaintext

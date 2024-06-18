@@ -63,14 +63,17 @@ class Client():
         cipher = AES.new(self.key, AES.MODE_CBC, iv)
         return unpad(cipher.decrypt(ct), AES.block_size).decode()
 
+    # Generate MAC for authentication
     def generate_mac(self, data):
         h = hmac.new(self.key, data, hashlib.sha256)
         return h.digest()
 
+    # Verify given MAC for authentication
     def verify_mac(self, data, mac):
         h = hmac.new(self.key, data, hashlib.sha256)
         return hmac.compare_digest(h.digest(), mac)
 
+    # initialize the Storage for the Server
     def initialize_tree(self):
         for i in range(self.N):
             leaf = self.position_map[i]
@@ -81,8 +84,8 @@ class Client():
             # Try to place the block in the leaf node first
             placed = False
             for bucket_id in reversed(path):
-                if len(self.server.storage[bucket_id]) < self.server.bucket_size:
-                    self.server.storage[bucket_id].append({'id': i, 'data': encrypted_data, 'valid': 0, 'mac': mac})
+                if self.server.get_bucket_size(bucket_id) < self.server.bucket_size:
+                    self.server.add_to_bucket(bucket_id, {'id': i, 'data': encrypted_data, 'valid': 0, 'mac': mac})
                     placed = True
                     break
 
@@ -90,6 +93,8 @@ class Client():
             if not placed:
                 self.stash.append({'id': i, 'data': encrypted_data, 'valid': 0, 'mac': mac})
 
+    # Fine the indexes path inside a binary tree on a way to a leaf
+    # To use on storage inside the server
     def get_path_to_leaf(self, leaf):
         path = []
         idx = leaf + self.server.num_of_buckets // 2
