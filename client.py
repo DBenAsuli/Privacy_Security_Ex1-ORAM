@@ -23,7 +23,9 @@ class Client():
     # Given a name, the client retrieves associated data by calling:
     def retrieve_data(self, server, id, data):
         # the client returns None if the data does not exist.
-        return self.access(id, server=server)
+        val = self.access(id, server=server)
+
+        return val
 
     # The client deletes data associated with an ID from server by calling:
     def delete_data(self, server, id, data):
@@ -48,6 +50,7 @@ class Client():
 
         self.read_path_to_stash(path, server=server)
         data = self.find_and_update_block_in_stash(block_id, new_data, delete, server=server)
+
         self.write_new_path_to_server(block_id, path, delete, server=server)
 
         # Back to default

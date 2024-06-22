@@ -1,6 +1,7 @@
+import re
 from main import *
 
-verbosity = "HIGH" # Change if you don't want a lot of prints
+verbosity = "HIGH"  # Change if you don't want a lot of prints
 
 if __name__ == '__main__':
     error = 0
@@ -148,6 +149,36 @@ if __name__ == '__main__':
             print(f"Block {num_of_blocks + 1}: {data}")
             print(f"Supposed to be: None\n")
             error = 1
+
+        # Corrupt the data for block 0 directly on the server
+        leaf = client.position_map[0]
+        path = client.get_path_to_leaf(leaf, server)
+        path_data = server.read_path(path)
+
+        # Find and corrupt the data block
+        for block in path_data:
+            if block['id'] == 0:
+                block['data'] = client.encrypt("aaa")
+                break
+
+        server.write_path(path, [path_data])
+        captured_output = StringIO()
+        sys.stdout = captured_output
+
+        # Call the function that prints something
+        retrieved_data = client.retrieve_data(server, 0, "")
+
+        # Get the printed output
+        printed_output = captured_output.getvalue()
+        print(captured_output.getvalue())
+
+        # Reset sys.stdout to its original value
+        sys.stdout = sys.__stdout__
+
+        # Check if the target regex pattern matches in the printed output
+        if not re.search(r'MAC verification failed for block.*', printed_output):
+            error = 1
+            print("Data integrity corruption not caught")
 
         if verbosity == "HIGH":
             if error == 0:

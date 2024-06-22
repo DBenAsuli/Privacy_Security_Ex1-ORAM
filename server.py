@@ -5,10 +5,12 @@
 import os
 import hmac
 import math
+import sys
 import base64
 import Crypto
 import hashlib
 import Crypto.Cipher
+from io import StringIO
 from Crypto.Cipher import AES
 from Crypto.Util import Counter
 from Crypto.Random import get_random_bytes
