@@ -1,12 +1,19 @@
 from main import *
 
+verbosity = "HIGH"
+
 if __name__ == '__main__':
     error = 0
     num_of_tests = random.randint(10, 100)
     print("Starting tests... \n")
+    print("Performing " + str(num_of_tests) + " tests: \n")
 
-    for i in range(num_of_tests):
+    for k in range(num_of_tests):
         num_of_blocks = random.randint(2, 1000)
+
+        if verbosity == "HIGH":
+            print("Performing test " + str(k) + " with " + str(num_of_blocks) + " blocks")
+
         server = Server(num_of_blocks=num_of_blocks)
         client = Client(server=server, num_of_blocks=num_of_blocks)
 
@@ -141,6 +148,13 @@ if __name__ == '__main__':
             print(f"Block {num_of_blocks + 1}: {data}")
             print(f"Supposed to be: None\n")
             error = 1
+
+        if verbosity == "HIGH":
+            if error == 0:
+                print("test " + str(k) + " PASSED \n")
+            else:
+                print("test " + str(k) + " FAILED \n")
+                break
 
     if error == 0:
         print("All " + str(num_of_tests) + " tests PASSED")
