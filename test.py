@@ -150,14 +150,16 @@ if __name__ == '__main__':
             print(f"Supposed to be: None\n")
             error = 1
 
-        # Corrupt the data for block 0 directly on the server
-        leaf = client.position_map[0]
+        corrupted_block = random.randint(0, num_of_blocks-1)
+
+        # Corrupt the data for a block directly on the server
+        leaf = client.position_map[corrupted_block]
         path = client.get_path_to_leaf(leaf, server)
         path_data = server.read_path(path)
 
         # Find and corrupt the data block
         for block in path_data:
-            if block['id'] == 0:
+            if block['id'] == corrupted_block:
                 block['data'] = client.encrypt("aaa")
                 break
 
@@ -166,19 +168,16 @@ if __name__ == '__main__':
         sys.stdout = captured_output
 
         # Call the function that prints something
-        retrieved_data = client.retrieve_data(server, 0, "")
+        retrieved_data = client.retrieve_data(server, corrupted_block, "")
 
         # Get the printed output
         printed_output = captured_output.getvalue()
-        print(captured_output.getvalue())
-
-        # Reset sys.stdout to its original value
         sys.stdout = sys.__stdout__
 
         # Check if the target regex pattern matches in the printed output
         if not re.search(r'MAC verification failed for block.*', printed_output):
             error = 1
-            print("Data integrity corruption not caught")
+            print("Data integrity corruption not caught for block " + str(corrupted_block))
 
         if verbosity == "HIGH":
             if error == 0:
