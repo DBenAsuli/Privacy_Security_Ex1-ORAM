@@ -1,6 +1,6 @@
 from main import *
 
-verbosity = "HIGH"
+verbosity = "HIGH" # Change if you don't want a lot of prints
 
 if __name__ == '__main__':
     error = 0
