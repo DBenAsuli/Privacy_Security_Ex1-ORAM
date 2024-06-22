@@ -12,6 +12,7 @@ class Client():
         self.server = server
         self.get_shared_key(self.server)
         self.stash = []
+        self.block_size = self.server.bucket_size
         self.position_map = {i: random.randint(0, 2 ** server.tree_height - 1) for i in range(num_of_blocks)}
         self.initialize_tree()
 
@@ -33,7 +34,6 @@ class Client():
     # The Function returns the read data while also updating a new path to the tree inside
     # the server. We can also delete data from a block using the "delete" argument.
     def access(self, block_id, new_data=None, delete=False, server=None):
-
         if server is None:
             server = self.server
             self.key = server.share_key()
@@ -58,27 +58,35 @@ class Client():
     def get_shared_key(self, server):
         self.key = server.share_key()
 
-    # Encryption of a block
-    def encrypt(self, data):
-        cipher = AES.new(self.key, AES.MODE_CBC)
-        ct_bytes = cipher.encrypt(pad(data.encode(), AES.block_size))
-        return cipher.iv + ct_bytes
+    # Encryption of data using CTR Mode
+    def encrypt(self, plaintext):
+        plaintext = plaintext.ljust(self.block_size).encode('utf-8')  # Ensure plaintext is bytes and block size
+        nonce = get_random_bytes(8)  # 8-byte nonce
+        ctr = Counter.new(64, prefix=nonce)
+        cipher = AES.new(self.key, AES.MODE_CTR, counter=ctr)
+        ciphertext = cipher.encrypt(plaintext)
+        return base64.b64encode(nonce + ciphertext).decode('utf-8')
 
-    # Decryption of a block
-    def decrypt(self, enc_data):
-        iv = enc_data[:AES.block_size]
-        ct = enc_data[AES.block_size:]
-        cipher = AES.new(self.key, AES.MODE_CBC, iv)
-        return unpad(cipher.decrypt(ct), AES.block_size).decode()
+    # Decryption of data
+    def decrypt(self, encrypted_block):
+        encrypted_data = base64.b64decode(encrypted_block)
+        nonce = encrypted_data[:8]
+        ciphertext = encrypted_data[8:]
+        ctr = Counter.new(64, prefix=nonce)
+        cipher = AES.new(self.key, AES.MODE_CTR, counter=ctr)
+        plaintext = cipher.decrypt(ciphertext)
+        return plaintext.decode('utf-8').rstrip()
 
     # Generate MAC for authentication
     def generate_mac(self, data):
-        h = hmac.new(self.key, data, hashlib.sha256)
+        key_bytes = self.key if isinstance(self.key, bytes) else self.key.encode()
+        h = hmac.new(key_bytes, data.encode(), hashlib.sha256)
         return h.digest()
 
-    # Verify given MAC for authentication
+    # Given data, performs MAC authentication
     def verify_mac(self, data, mac):
-        h = hmac.new(self.key, data, hashlib.sha256)
+        key_bytes = self.key if isinstance(self.key, bytes) else self.key.encode()
+        h = hmac.new(key_bytes, data.encode(), hashlib.sha256)
         return hmac.compare_digest(h.digest(), mac)
 
     # initialize the Storage for the Server
@@ -166,15 +174,15 @@ class Client():
         for bucket_id in path:
             # For each Bucket ID along the path,
             # select blocks from the stash that should be placed in this bucket:
-                # For each block inside the stash,
-                # Check if the current bucket ID is part of the path from root to the block.
-                # If so, add it do the updated data path.
-                bucket = [block for block in self.stash if
-                          bucket_id in self.get_path_to_leaf(self.position_map[block['id']], server)]
-                updated_path_data.append(bucket[:server.bucket_size])
+            # For each block inside the stash,
+            # Check if the current bucket ID is part of the path from root to the block.
+            # If so, add it do the updated data path.
+            bucket = [block for block in self.stash if
+                      bucket_id in self.get_path_to_leaf(self.position_map[block['id']], server)]
+            updated_path_data.append(bucket[:server.bucket_size])
 
-                # Evict the relevant blocks from the stash
-                self.stash = [block for block in self.stash if block not in updated_path_data[-1]]
+            # Evict the relevant blocks from the stash
+            self.stash = [block for block in self.stash if block not in updated_path_data[-1]]
 
         # Write updated data with MAC
         for block in updated_path_data:

@@ -22,28 +22,28 @@ if __name__ == '__main__':
 
         # Write data to blocks
         for i in range(num_of_blocks):
-            client.store_data(server, i, f"dat{i:X}")
+            client.store_data(server, i, f"a{i:X}")
 
         # Access data from blocks
         for i in range(num_of_blocks):
             data = client.retrieve_data(server, i, "")
-            if data != f"dat{i:X}":
+            if data != f"a{i:X}":
                 print("FAIL")
                 print(f"Block {i}: {data}")
-                print(f"Supposed to be: dat{i:X}\n")
+                print(f"Supposed to be: a{i:X}\n")
                 error = 1
 
         # Update a block and read it back
         for i in range(num_of_blocks):
-            client.store_data(server, i, f"uda{i:X}")
+            client.store_data(server, i, f"a{i:X}")
 
         # Access data from blocks
         for i in range(num_of_blocks):
             data = client.retrieve_data(server, i, "")
-            if data != f"uda{i:X}":
+            if data != f"a{i:X}":
                 print("FAIL")
                 print(f"Block {i}: {data}")
-                print(f"Supposed to be: uda{i:X}\n")
+                print(f"Supposed to be: a{i:X}\n")
                 error = 1
 
         # Remove a block
@@ -61,38 +61,38 @@ if __name__ == '__main__':
 
         # Update a block and read it back
         for i in range(num_of_blocks):
-            client.store_data(server, i, f"udb{i:X}")
+            client.store_data(server, i, f"b{i:X}")
 
         # Access data from blocks
         for i in range(num_of_blocks):
             data = client.retrieve_data(server, i, "")
-            if data != f"udb{i:X}":
+            if data != f"b{i:X}":
                 print("FAIL")
                 print(f"Block {i}: {data}")
-                print(f"Supposed to be: udb{i:X}\n")
+                print(f"Supposed to be: b{i:X}\n")
                 error = 1
 
         # Update a block and read it back
         for i in range(num_of_blocks):
             if i % 2:
-                client.store_data(server, i, f"udc{i:X}")
+                client.store_data(server, i, f"c{i:X}")
             else:
-                client.store_data(server, i, f"udd{i:X}")
+                client.store_data(server, i, f"d{i:X}")
 
         # Access data from blocks
         for i in range(num_of_blocks):
             data = client.retrieve_data(server, i, "")
             if i % 2:
-                if data != f"udc{i:X}":
+                if data != f"c{i:X}":
                     print("FAIL")
                     print(f"Block {i}: {data}")
-                    print(f"Supposed to be: udc{i:X}\n")
+                    print(f"Supposed to be: c{i:X}\n")
                     error = 1
             else:
-                if data != f"udd{i:X}":
+                if data != f"d{i:X}":
                     print("FAIL")
                     print(f"Block {i}: {data}")
-                    print(f"Supposed to be: udd{i:X}\n")
+                    print(f"Supposed to be: d{i:X}\n")
                     error = 1
 
         # Remove a block
@@ -110,10 +110,10 @@ if __name__ == '__main__':
                     print(f"Supposed to be: \"NULL\"\n")
                     error = 1
             else:
-                if data != f"udd{i:X}":
+                if data != f"d{i:X}":
                     print("FAIL")
                     print(f"Block {i}: {data}")
-                    print(f"Supposed to be: udd{i:X}\n")
+                    print(f"Supposed to be: d{i:X}\n")
                     error = 1
 
         # Remove a block
@@ -123,15 +123,15 @@ if __name__ == '__main__':
 
         # Update a block and read it back
         for i in range(num_of_blocks):
-            client.store_data(server, i, f"ude{i:X}")
+            client.store_data(server, i, f"e{i:X}")
 
         # Access data from blocks
         for i in range(num_of_blocks):
             data = client.retrieve_data(server, i, "")
-            if data != f"ude{i:X}":
+            if data != f"e{i:X}":
                 print("FAIL")
                 print(f"Block {i}: {data}")
-                print(f"Supposed to be: ude{i:X}\n")
+                print(f"Supposed to be: e{i:X}\n")
                 error = 1
 
         # Accessing a non-existent block (beyond initial blocks)
