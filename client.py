@@ -7,13 +7,13 @@ from server import *
 
 
 class Client():
-    def __init__(self, num_of_blocks, server):
-        self.N = num_of_blocks
+    def __init__(self, server):
         self.server = server
+        self.N = self.server.N
         self.get_shared_key(self.server)
         self.stash = []
         self.block_size = self.server.bucket_size
-        self.position_map = {i: random.randint(0, 2 ** server.tree_height - 1) for i in range(num_of_blocks)}
+        self.position_map = {i: random.randint(0, 2 ** server.tree_height - 1) for i in range(self.N)}
         self.initialize_tree()
 
     # The client stores data associated with an ID on the server by calling:
@@ -40,6 +40,8 @@ class Client():
             server = self.server
             self.key = server.share_key()
             self.initialize_tree(server=server)
+        else:
+            self.N = server.N
 
         # Handling non-existing blocks
         if block_id not in self.position_map:
@@ -49,7 +51,7 @@ class Client():
         path = self.get_path_to_leaf(leaf, server=server)
 
         self.read_path_to_stash(path, server=server)
-        data = self.find_and_update_block_in_stash(block_id, new_data, delete, server=server)
+        data = self.find_and_update_block_in_stash(block_id, new_data, delete)
 
         self.write_new_path_to_server(block_id, path, delete, server=server)
 
@@ -64,8 +66,8 @@ class Client():
 
     # Encryption of data using CTR Mode
     def encrypt(self, plaintext):
-        plaintext = plaintext.ljust(self.block_size).encode('utf-8')  # Ensure plaintext is bytes and block size
-        nonce = get_random_bytes(8)  # 8-byte nonce
+        plaintext = plaintext.ljust(self.block_size).encode('utf-8')
+        nonce = get_random_bytes(8)
         ctr = Counter.new(64, prefix=nonce)
         cipher = AES.new(self.key, AES.MODE_CTR, counter=ctr)
         ciphertext = cipher.encrypt(plaintext)
@@ -98,6 +100,8 @@ class Client():
         if server is None:
             server = self.server
             self.key = server.share_key()
+        else:
+            self.N = server.N
 
         for i in range(self.N):
             leaf = self.position_map[i]
@@ -117,7 +121,7 @@ class Client():
             if not placed:
                 self.stash.append({'id': i, 'data': encrypted_data, 'valid': 0, 'mac': mac})
 
-    # Fine the indexes path inside a binary tree on a way to a leaf
+    # Find the indexes path inside a binary tree on a way to a leaf
     # To use on storage inside the server
     def get_path_to_leaf(self, leaf, server):
         path = []
@@ -138,7 +142,7 @@ class Client():
     # In case we set the new_data argument, we shall update this
     # block to contain the new data
     # The function returns the "old" data from the block
-    def find_and_update_block_in_stash(self, block_id, new_data, delete, server):
+    def find_and_update_block_in_stash(self, block_id, new_data, delete):
         data = None
 
         for block in self.stash:
@@ -155,9 +159,9 @@ class Client():
                     block['data'] = self.encrypt('NULL')
                     block['valid'] = 0
                 elif new_data is not None:
-                    # If we wish to update the data in this block, we will change the data to to the desired value
-                    encrypted_data = self.encrypt(new_data)
+                    # If we wish to update the data in this block, we will change the data to the desired value
                     block['valid'] = 1
+                    encrypted_data = self.encrypt(new_data)
                     block['data'] = encrypted_data
                     block['mac'] = self.generate_mac(encrypted_data)
                 break
@@ -172,6 +176,7 @@ class Client():
             new_leaf = random.randint(0, 2 ** server.tree_height - 1)
             self.position_map[block_id] = new_leaf
 
+        # Now we wish to create the new path to write to the tree in Server
         updated_path_data = []
 
         # Iterate through each bucket ID in the path from the root to the leaf node.
@@ -181,8 +186,19 @@ class Client():
             # For each block inside the stash,
             # Check if the current bucket ID is part of the path from root to the block.
             # If so, add it do the updated data path.
-            bucket = [block for block in self.stash if
-                      bucket_id in self.get_path_to_leaf(self.position_map[block['id']], server)]
+            # Initialize an empty list to hold the blocks that meet the condition
+            bucket = []
+
+            for block in self.stash:
+                block_position = self.position_map[block['id']]
+
+                # Get the path to the leaf node using the block's position
+                path_to_leaf = self.get_path_to_leaf(block_position, server)
+
+                # Check if the bucket_id is in the path to the leaf node
+                if bucket_id in path_to_leaf:
+                    bucket.append(block)
+
             updated_path_data.append(bucket[:server.bucket_size])
 
             # Evict the relevant blocks from the stash

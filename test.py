@@ -16,7 +16,7 @@ if __name__ == '__main__':
             print("Performing test " + str(k + 1) + " with " + str(num_of_blocks) + " blocks")
 
         server = Server(num_of_blocks=num_of_blocks)
-        client = Client(server=server, num_of_blocks=num_of_blocks)
+        client = Client(server=server)
 
         # Access data from blocks
         for i in range(num_of_blocks):

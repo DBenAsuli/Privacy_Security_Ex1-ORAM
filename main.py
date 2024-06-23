@@ -15,7 +15,7 @@ def benchmark_throughput(num_blocks_list, num_requests):
 
     for num_blocks in num_blocks_list:
         server = Server(num_of_blocks=num_blocks)
-        client = Client(server=server, num_of_blocks=num_blocks)
+        client = Client(server=server)
 
         # Preload the server with data
         for i in range(num_blocks):
@@ -36,7 +36,7 @@ def benchmark_throughput(num_blocks_list, num_requests):
 
 def benchmark_latency(num_blocks, num_requests, max_threads):
     server = Server(num_of_blocks=num_blocks)
-    client = Client(server=server, num_of_blocks=num_blocks)
+    client = Client(server=server)
 
     latency_results = []
 
@@ -110,7 +110,7 @@ if __name__ == '__main__':
 
     print("Benchmarking Throughput:")
     for _ in range(num_of_iterations):
-        print("Iteration: " + str(_) + "\n")
+        print("\nIteration: " + str(_) + "\n")
         throughput_results.append(benchmark_throughput(num_blocks_list, num_requests))
 
     throughput_results_average = []
@@ -126,7 +126,7 @@ if __name__ == '__main__':
     max_threads = 25
 
     for _ in range(num_of_iterations):
-        print("Iteration: " + str(_) +"\n")
+        print("\nIteration: " + str(_) + "\n")
         latency_results.append(benchmark_latency(num_blocks, num_requests, max_threads))
 
     latency_results_average = []
