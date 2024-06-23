@@ -19,7 +19,7 @@ def benchmark_throughput(num_blocks_list, num_requests):
 
         # Preload the server with data
         for i in range(num_blocks):
-            client.access(i, f"data_{i}")
+            client.access(i, f"d{i}")
 
         start_time = time.time()
         for _ in range(num_requests):
@@ -29,7 +29,7 @@ def benchmark_throughput(num_blocks_list, num_requests):
         end_time = time.time()
         throughput = num_requests / (end_time - start_time)
         throughput_results.append([num_blocks, throughput])
-    #    print(f"Throughput for N={num_blocks}: {throughput:.2f} requests/sec")
+        print(f"Throughput for N={num_blocks}: {throughput:.2f} requests/sec")
 
     return throughput_results
 
@@ -42,7 +42,7 @@ def benchmark_latency(num_blocks, num_requests, max_threads):
 
     # Preload the server with data
     for i in range(num_blocks):
-        client.access(i, f"data_{i}")
+        client.access(i, f"d{i}")
 
     results = Queue()
 
@@ -70,7 +70,7 @@ def benchmark_latency(num_blocks, num_requests, max_threads):
 
         avg_latency = total_latency / (num_requests * num_threads)
         latency_results.append([num_threads, avg_latency])
-    #    print(f"Average latency with {num_threads} threads: {avg_latency:.6f} seconds/request")
+        print(f"Average latency with {num_threads} threads: {avg_latency:.6f} seconds/request")
 
     return latency_results
 
@@ -103,14 +103,15 @@ def plot_latency(latency_results):
 
 if __name__ == '__main__':
     num_blocks_list = [2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2056]
-    num_requests = 1000
+    num_requests = 250
+    num_of_iterations = 10
     throughput_results = []
     latency_results = []
 
     print("Benchmarking Throughput:")
-    for _ in range(10):
-        results = benchmark_throughput(num_blocks_list, num_requests)
-        throughput_results.append(results)
+    for _ in range(num_of_iterations):
+        print("Iteration: " + str(_) + "\n")
+        throughput_results.append(benchmark_throughput(num_blocks_list, num_requests))
 
     throughput_results_average = []
     for i in range(len(throughput_results[0])):
@@ -124,7 +125,8 @@ if __name__ == '__main__':
     num_requests = 1000
     max_threads = 25
 
-    for _ in range(10):
+    for _ in range(num_of_iterations):
+        print("Iteration: " + str(_) +"\n")
         latency_results.append(benchmark_latency(num_blocks, num_requests, max_threads))
 
     latency_results_average = []

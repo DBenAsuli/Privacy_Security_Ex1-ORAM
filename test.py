@@ -1,7 +1,7 @@
 import re
 from main import *
 
-verbosity = "HIGH"  # Change if you don't want a lot of prints
+verbosity = "HIGH"  # Change to 'HIGH' if you want more of prints
 
 if __name__ == '__main__':
     error = 0
@@ -13,7 +13,7 @@ if __name__ == '__main__':
         num_of_blocks = random.randint(2, 1000)
 
         if verbosity == "HIGH":
-            print("Performing test " + str(k) + " with " + str(num_of_blocks) + " blocks")
+            print("Performing test " + str(k + 1) + " with " + str(num_of_blocks) + " blocks")
 
         server = Server(num_of_blocks=num_of_blocks)
         client = Client(server=server, num_of_blocks=num_of_blocks)
@@ -150,7 +150,7 @@ if __name__ == '__main__':
             print(f"Supposed to be: None\n")
             error = 1
 
-        corrupted_block = random.randint(0, num_of_blocks-1)
+        corrupted_block = random.randint(0, num_of_blocks - 1)
 
         # Corrupt the data for a block directly on the server
         leaf = client.position_map[corrupted_block]
@@ -160,7 +160,7 @@ if __name__ == '__main__':
         # Find and corrupt the data block
         for block in path_data:
             if block['id'] == corrupted_block:
-                block['data'] = client.encrypt("aaa")
+                block['data'] = client.encrypt("HAHA")
                 break
 
         server.write_path(path, [path_data])
@@ -181,9 +181,9 @@ if __name__ == '__main__':
 
         if verbosity == "HIGH":
             if error == 0:
-                print("test " + str(k) + " PASSED \n")
+                print("test " + str(k + 1) + " PASSED \n")
             else:
-                print("test " + str(k) + " FAILED \n")
+                print("test " + str(k + 1) + " FAILED \n")
                 break
 
     if error == 0:

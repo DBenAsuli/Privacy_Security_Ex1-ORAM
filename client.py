@@ -54,7 +54,8 @@ class Client():
         self.write_new_path_to_server(block_id, path, delete, server=server)
 
         # Back to default
-        self.key = self.server.share_key()
+        self.get_shared_key(server=self.server)
+
         return data
 
     # Get the shared key from Server

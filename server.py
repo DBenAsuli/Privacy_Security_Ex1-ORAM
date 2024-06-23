@@ -3,9 +3,9 @@
 # The Hebrew University of Jerusalem                      June 2024
 
 import os
+import sys
 import hmac
 import math
-import sys
 import base64
 import Crypto
 import hashlib
@@ -13,9 +13,9 @@ import Crypto.Cipher
 from io import StringIO
 from Crypto.Cipher import AES
 from Crypto.Util import Counter
+from collections import OrderedDict
 from Crypto.Random import get_random_bytes
 from Crypto.Util.Padding import pad, unpad
-from collections import OrderedDict
 
 DATA_LEN = 4
 BUCKET_SIZE = 16
