@@ -176,8 +176,10 @@ if __name__ == '__main__':
 
         # Check if the target regex pattern matches in the printed output
         if not re.search(r'MAC verification failed for block.*', printed_output):
-            error = 1
-            print("Data integrity corruption not caught for block " + str(corrupted_block))
+            data = client.retrieve_data(server, corrupted_block, "")
+            if data == "HAHA":  # Data was indeed successfully corrupted
+                error = 1
+                print("Data integrity corruption not caught for block " + str(corrupted_block))
 
         if verbosity == "HIGH":
             if error == 0:
